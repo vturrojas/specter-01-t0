@@ -1,27 +1,30 @@
 # SPECTER-01 T0
 
-This repository freezes the first IOC acceptance criterion before any state-engine implementation exists.
+SPECTER-01 T0 is a deliberately small public test fixture for evaluating AI coding agents, model gateways, deterministic acceptance testing, and assurance workflows.
 
-## IOC Task 001: transient-spike restraint
+This repository is not intended to be a production security product.
 
-The deterministic replay fixture describes a quiet baseline, one 100 ms transient spike, and a return to quiet. The engine must show false-positive restraint: it must never enter `ANOMALY` and must finish in `QUIET`.
+Its purpose is to provide a reproducible environment where an agent can be given a bounded implementation task against a precommitted acceptance harness, and where success can be verified independently of the agent's own claims.
 
-Run the acceptance harness from the repository root:
+## Why this repository exists
 
-```sh
-./scripts/acceptance/transient_spike_no_anomaly.sh
-```
+Modern coding agents are very good at producing code, tests, scaffolding, and convincing completion reports.
 
-The harness invokes this fixed CLI contract:
+That does not necessarily mean the resulting system works.
 
-```sh
-./bin/specter-t0 replay test/replay/transient_spike.json
-```
+This repository is designed around a stricter rule:
 
-Acceptance requires all of the following:
+> **The acceptance criterion exists before the implementation, and the builder is not allowed to redefine it.**
 
-- the replay command exits with status 0;
-- combined standard output and standard error do not contain `ANOMALY`;
-- the last non-empty output line is exactly `FINAL_STATE=QUIET`.
+The workflow is:
 
-The harness is intentionally RED at this baseline because `./bin/specter-t0` does not exist. No implementation, mock, or build system is included to make it pass.
+```text
+precommit acceptance test
+        ↓
+give bounded task to agent
+        ↓
+agent implements
+        ↓
+run frozen acceptance harness
+        ↓
+independent PASS / FAIL

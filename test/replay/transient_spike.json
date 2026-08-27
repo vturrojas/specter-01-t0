@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "scenario": "transient_spike_no_anomaly",
+  "tick_ms": 100,
+  "samples": [
+    { "tick": 0, "phase": "quiet_baseline", "value": 0.0 },
+    { "tick": 1, "phase": "quiet_baseline", "value": 0.0 },
+    { "tick": 2, "phase": "quiet_baseline", "value": 0.0 },
+    { "tick": 3, "phase": "transient_spike", "value": 1.0 },
+    { "tick": 4, "phase": "quiet_return", "value": 0.0 },
+    { "tick": 5, "phase": "quiet_return", "value": 0.0 },
+    { "tick": 6, "phase": "quiet_return", "value": 0.0 }
+  ],
+  "expected": {
+    "never_enter": "ANOMALY",
+    "final_state": "QUIET"
+  }
+}

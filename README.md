@@ -1,18 +1,14 @@
 # SPECTER-01 T0
 
-SPECTER-01 T0 is a deliberately small public test fixture for evaluating AI coding agents, model gateways, deterministic acceptance testing, and assurance workflows.
+SPECTER-01 T0 is a deliberately small public fixture for evaluating AI coding
+agents, deterministic acceptance testing, and assurance workflows. It is not a
+production security product.
 
-This repository is not intended to be a production security product.
+Its purpose is to give an agent a bounded implementation task backed by a
+precommitted acceptance harness, so success can be verified independently of
+the agent's own claims.
 
-Its purpose is to provide a reproducible environment where an agent can be given a bounded implementation task against a precommitted acceptance harness, and where success can be verified independently of the agent's own claims.
-
-## Why this repository exists
-
-Modern coding agents are very good at producing code, tests, scaffolding, and convincing completion reports.
-
-That does not necessarily mean the resulting system works.
-
-This repository is designed around a stricter rule:
+## Design principle
 
 > **The acceptance criterion exists before the implementation, and the builder is not allowed to redefine it.**
 
@@ -28,89 +24,55 @@ agent implements
 run frozen acceptance harness
         ↓
 independent PASS / FAIL
+```
 
 The acceptance harness, not the agent, determines whether the task succeeded.
 
-Current experiment
+## Current experiment: transient-spike restraint
 
-The first experiment tests false-positive restraint in a minimal SPECTER state engine.
+The deterministic replay fixture describes a quiet baseline, one 100 ms
+transient spike, and a return to quiet. The state engine must demonstrate
+false-positive restraint: it must never enter `ANOMALY` and must finish in
+`QUIET`.
 
-Scenario:
+Run the frozen acceptance harness from the repository root:
 
-QUIET
-  ↓
-short transient spike
-  ↓
-return to quiet
-
-Required result:
-
-ANOMALY must never be entered
-final state must be QUIET
-
-Frozen acceptance command:
-
+```sh
 ./scripts/acceptance/transient_spike_no_anomaly.sh
+```
 
-A successful implementation must make that command exit 0 without modifying the acceptance fixture.
+The harness invokes this fixed CLI contract:
 
-What this repo may be used to test
+```sh
+./bin/specter-t0 replay test/replay/transient_spike.json
+```
 
-This repository may be deliberately reset, broken, modified, or reused to evaluate:
+Acceptance requires all of the following:
 
-AI coding agents
-model-routing gateways
-local vs hosted models
-agent tool use
-deterministic acceptance testing
-coding-agent reliability
-policy enforcement
-execution isolation
-reproducibility
-assurance receipts
-failure recovery
-multi-agent development workflows
+- The replay command exits with status 0.
+- The replay command's combined standard output and standard error do not
+  contain `ANOMALY`.
+- The last non-empty line of replay command output is exactly
+  `FINAL_STATE=QUIET`.
 
-Future experiments may use systems such as Hermes, OpenCode, Codex, Claude Code, local models, or other agent runtimes.
+## Repository contents
 
-Design principle
+- `test/replay/transient_spike.json` is the deterministic replay fixture.
+- `scripts/acceptance/transient_spike_no_anomaly.sh` is the frozen acceptance
+  harness.
+- `README.md` documents the experiment and CLI contract.
 
-A passing unit-test suite is useful evidence.
+## Baseline status
 
-An agent saying that a task is complete is not.
+The harness is intentionally **RED** at this baseline because
+`./bin/specter-t0` does not exist. No state-engine implementation, mock, or
+build system is included to make the harness pass.
 
-The standard for this repository is:
+A successful implementation must make the frozen acceptance command exit 0
+without changing the acceptance harness or replay fixture.
 
-real implementation
-+ frozen acceptance test
-+ reproducible execution
-= evidence
-Safety and scope
+## Safety and scope
 
-This is a controlled research and evaluation fixture.
-
-It should not contain:
-
-credentials
-production secrets
-private infrastructure details
-sensitive operational data
-proprietary datasets
-Status
-
-Experimental.
-
-Expect the repository to change frequently as it is used for agent and assurance testing.
-
-
-I particularly want to keep this line:
-
-> **The acceptance criterion exists before the implementation, and the builder is not allowed to redefine it.**
-
-That is the whole reason this repo is suddenly useful.
-
-Since you already have the local repo open, the cleanest way is just:
-
-```bash
-cd ~/code/specter-01-t0
-nano README.md
+This repository is a controlled research and evaluation fixture. It must not
+contain credentials, production secrets, private infrastructure details,
+sensitive operational data, or proprietary datasets.

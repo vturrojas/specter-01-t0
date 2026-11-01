@@ -1,0 +1,64 @@
+#!/usr/bin/env python3
+"""Replay sampled values with a three-tick elevation and recovery rule."""
+
+import argparse
+import json
+import math
+import sys
+
+
+def replay(data):
+    if not isinstance(data, dict) or type(data.get('schema_version')) is not int or data['schema_version'] != 1:
+        raise ValueError('schema_version must be 1')
+    if type(data.get('tick_ms')) is not int or data['tick_ms'] <= 0:
+        raise ValueError('tick_ms must be a positive integer')
+    samples = data.get('samples')
+    if not isinstance(samples, list) or not samples:
+        raise ValueError('samples must be a non-empty list')
+
+    previous_tick = -1
+    for sample in samples:
+        if not isinstance(sample, dict):
+            raise ValueError('each sample must be an object')
+        tick, value = sample.get('tick'), sample.get('value')
+        if type(tick) is not int or tick <= previous_tick:
+            raise ValueError('sample ticks must be non-negative and strictly increasing')
+        if type(value) not in (int, float) or (isinstance(value, float) and not math.isfinite(value)):
+            raise ValueError('sample values must be finite numbers')
+        previous_tick = tick
+
+    state, streak, previous_tick = 'QUIET', 0, None
+    transitions = []
+    for sample in samples:
+        tick, value = sample['tick'], sample['value']
+        if previous_tick is not None and tick != previous_tick + 1:
+            streak = 0
+        matches = value >= 0.5 if state == 'QUIET' else value < 0.5
+        streak = streak + 1 if matches else 0
+        if streak == 3:
+            state = 'ANOMALY' if state == 'QUIET' else 'QUIET'
+            transitions.append(state)
+            streak = 0
+        previous_tick = tick
+    return transitions, state
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('command', choices=['replay'])
+    parser.add_argument('file')
+    args = parser.parse_args()
+    try:
+        with open(args.file, encoding='utf-8') as source:
+            transitions, state = replay(json.load(source))
+    except (OSError, UnicodeError, ValueError) as error:
+        print(f'error: {error}', file=sys.stderr)
+        return 1
+    for transition in transitions:
+        print(f'STATE={transition}')
+    print(f'FINAL_STATE={state}')
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())
